@@ -1,0 +1,20 @@
+# Weekly registry hygiene: report (and, once reviewed, delete) images that never reached an environment.
+name: registry-cleanup
+
+on:
+  schedule:
+    - cron: "41 4 * * 0"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  cleanup:
+    name: cleanup
+    uses: Triorex/paved-road-platform/.github/workflows/registry-cleanup.yml@72bb39787251c05b5234ca0a602d0b2c4ac3c3d3 # v1.0.3-rc.1
+    with:
+      apply: false # flip to true after reviewing the first report
+    permissions:
+      contents: read
+      packages: write
+      id-token: write

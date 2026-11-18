@@ -17,7 +17,7 @@ concurrency:
 jobs:
   pr-security:
     name: pr-security
-    uses: Triorex/paved-road-platform/.github/workflows/pr-security.yml@2e595938f560f36dce6755c55329b05a3c8b53d2 # v1.0.2
+    uses: Triorex/paved-road-platform/.github/workflows/pr-security.yml@72bb39787251c05b5234ca0a602d0b2c4ac3c3d3 # v1.0.3-rc.1
     with:
       codeql-languages: '["python","actions"]'
     permissions:
@@ -31,7 +31,7 @@ jobs:
     name: secure-build
     if: github.event_name == 'push'
     needs: pr-security
-    uses: Triorex/paved-road-platform/.github/workflows/secure-build.yml@2e595938f560f36dce6755c55329b05a3c8b53d2 # v1.0.2
+    uses: Triorex/paved-road-platform/.github/workflows/secure-build.yml@72bb39787251c05b5234ca0a602d0b2c4ac3c3d3 # v1.0.3-rc.1
     with:
       image-name: payments-api
       language: python
@@ -48,7 +48,7 @@ jobs:
   admission:
     name: admission-test
     needs: build
-    uses: Triorex/paved-road-platform/.github/workflows/admission-test.yml@2e595938f560f36dce6755c55329b05a3c8b53d2 # v1.0.2
+    uses: Triorex/paved-road-platform/.github/workflows/admission-test.yml@72bb39787251c05b5234ca0a602d0b2c4ac3c3d3 # v1.0.3-rc.1
     with:
       image: ${{ needs.build.outputs.image }}
       digest: ${{ needs.build.outputs.digest }}
@@ -60,7 +60,7 @@ jobs:
   staging:
     name: release-staging
     needs: [build, admission]
-    uses: Triorex/paved-road-platform/.github/workflows/release.yml@2e595938f560f36dce6755c55329b05a3c8b53d2 # v1.0.2
+    uses: Triorex/paved-road-platform/.github/workflows/release.yml@72bb39787251c05b5234ca0a602d0b2c4ac3c3d3 # v1.0.3-rc.1
     with:
       image: ${{ needs.build.outputs.image }}
       digest: ${{ needs.build.outputs.digest }}
@@ -68,17 +68,20 @@ jobs:
     permissions:
       contents: read
       packages: write
-      attestations: read
+      id-token: write # sign the promotion attestation
+      attestations: write
 
   production:
     name: release-production
     needs: [build, staging]
-    uses: Triorex/paved-road-platform/.github/workflows/release.yml@2e595938f560f36dce6755c55329b05a3c8b53d2 # v1.0.2
+    uses: Triorex/paved-road-platform/.github/workflows/release.yml@72bb39787251c05b5234ca0a602d0b2c4ac3c3d3 # v1.0.3-rc.1
     with:
       image: ${{ needs.build.outputs.image }}
       digest: ${{ needs.build.outputs.digest }}
       environment: production
     permissions:
-      contents: read
+      contents: write # record the production release
+      actions: read # read who approved the deployment
       packages: write
-      attestations: read
+      id-token: write
+      attestations: write
