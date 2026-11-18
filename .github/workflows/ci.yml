@@ -18,7 +18,7 @@ concurrency:
 jobs:
   pr-security:
     name: pr-security
-    uses: Triorex/paved-road-platform/.github/workflows/pr-security.yml@13a5622411c31a3cf8f162c176c9016a37bded48 # v1.1.0-rc.1
+    uses: Triorex/paved-road-platform/.github/workflows/pr-security.yml@13a5622411c31a3cf8f162c176c9016a37bded48 # v1.1.0
     with:
       codeql-languages: '["python","actions"]'
     permissions:
@@ -32,7 +32,7 @@ jobs:
   build:
     name: secure-build
     if: github.event_name == 'push'
-    uses: Triorex/paved-road-platform/.github/workflows/secure-build.yml@13a5622411c31a3cf8f162c176c9016a37bded48 # v1.1.0-rc.1
+    uses: Triorex/paved-road-platform/.github/workflows/secure-build.yml@13a5622411c31a3cf8f162c176c9016a37bded48 # v1.1.0
     with:
       image-name: payments-api
       language: python
@@ -48,7 +48,7 @@ jobs:
   staging:
     name: release-staging
     needs: [pr-security, build]
-    uses: Triorex/paved-road-platform/.github/workflows/release.yml@13a5622411c31a3cf8f162c176c9016a37bded48 # v1.1.0-rc.1
+    uses: Triorex/paved-road-platform/.github/workflows/release.yml@13a5622411c31a3cf8f162c176c9016a37bded48 # v1.1.0
     with:
       image: ${{ needs.build.outputs.image }}
       digest: ${{ needs.build.outputs.digest }}
@@ -64,7 +64,7 @@ jobs:
   staging-verify:
     name: staging-verify
     needs: [build, staging]
-    uses: Triorex/paved-road-platform/.github/workflows/staging-verify.yml@13a5622411c31a3cf8f162c176c9016a37bded48 # v1.1.0-rc.1
+    uses: Triorex/paved-road-platform/.github/workflows/staging-verify.yml@13a5622411c31a3cf8f162c176c9016a37bded48 # v1.1.0
     with:
       image: ${{ needs.build.outputs.image }}
       digest: ${{ needs.build.outputs.digest }}
@@ -78,7 +78,7 @@ jobs:
   production:
     name: release-production
     needs: [build, staging-verify]
-    uses: Triorex/paved-road-platform/.github/workflows/release.yml@13a5622411c31a3cf8f162c176c9016a37bded48 # v1.1.0-rc.1
+    uses: Triorex/paved-road-platform/.github/workflows/release.yml@13a5622411c31a3cf8f162c176c9016a37bded48 # v1.1.0
     with:
       image: ${{ needs.build.outputs.image }}
       digest: ${{ needs.build.outputs.digest }}
@@ -93,7 +93,7 @@ jobs:
   record-release:
     name: record-release
     needs: [build, production]
-    uses: Triorex/paved-road-platform/.github/workflows/record-release.yml@13a5622411c31a3cf8f162c176c9016a37bded48 # v1.1.0-rc.1
+    uses: Triorex/paved-road-platform/.github/workflows/record-release.yml@13a5622411c31a3cf8f162c176c9016a37bded48 # v1.1.0
     with:
       image: ${{ needs.build.outputs.image }}
       digest: ${{ needs.build.outputs.digest }}
