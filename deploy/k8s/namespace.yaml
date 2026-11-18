@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: payments
+  labels:
+    paved-road.triorex.io/enforce: "true"          # Kyverno signature verification applies here
+    pod-security.kubernetes.io/enforce: restricted  # Kubernetes Pod Security Admission, defence in depth
+    pod-security.kubernetes.io/enforce-version: latest

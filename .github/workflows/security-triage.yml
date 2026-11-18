@@ -1,0 +1,19 @@
+# Daily risk-based triage: scanner alerts -> KEV/EPSS priority -> issues with SLA due dates.
+name: security-triage
+
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  triage:
+    name: triage
+    uses: Triorex/paved-road-platform/.github/workflows/vuln-triage.yml@PLATFORM_SHA_PENDING # v1.0.0
+    permissions:
+      contents: read
+      security-events: read
+      issues: write
+      id-token: write

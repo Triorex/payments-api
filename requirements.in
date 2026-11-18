@@ -1,0 +1,6 @@
+# Runtime dependencies. Lock with:
+#   uv pip compile requirements.in -o requirements.txt --generate-hashes --universal \
+#     --python-version 3.15 --exclude-newer <today minus 7 days>
+# --exclude-newer applies the paved-road release cooldown at lock time.
+fastapi
+uvicorn

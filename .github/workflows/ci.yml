@@ -1,0 +1,84 @@
+# Paved Road caller: the only CI file an app team owns.
+# Every security control lives in Triorex/paved-road-platform at the pinned commit below.
+# Dependabot (github-actions ecosystem) opens a PR when the platform ships a new release.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  pr-security:
+    name: pr-security
+    uses: Triorex/paved-road-platform/.github/workflows/pr-security.yml@PLATFORM_SHA_PENDING # v1.0.0
+    with:
+      codeql-languages: '["python","actions"]'
+    permissions:
+      contents: read
+      id-token: write
+      security-events: write
+      pull-requests: write
+      actions: read
+
+  build:
+    name: secure-build
+    if: github.event_name == 'push'
+    needs: pr-security
+    uses: Triorex/paved-road-platform/.github/workflows/secure-build.yml@PLATFORM_SHA_PENDING # v1.0.0
+    with:
+      image-name: payments-api
+      language: python
+      install-command: pip install -r requirements.txt -r requirements-dev.txt
+      test-command: python -m pytest -q
+      dast-mode: api
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+      security-events: write
+      attestations: write
+
+  admission:
+    name: admission-test
+    needs: build
+    uses: Triorex/paved-road-platform/.github/workflows/admission-test.yml@PLATFORM_SHA_PENDING # v1.0.0
+    with:
+      image: ${{ needs.build.outputs.image }}
+      digest: ${{ needs.build.outputs.digest }}
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+
+  staging:
+    name: release-staging
+    needs: [build, admission]
+    uses: Triorex/paved-road-platform/.github/workflows/release.yml@PLATFORM_SHA_PENDING # v1.0.0
+    with:
+      image: ${{ needs.build.outputs.image }}
+      digest: ${{ needs.build.outputs.digest }}
+      environment: staging
+    permissions:
+      contents: read
+      packages: write
+      attestations: read
+
+  production:
+    name: release-production
+    needs: [build, staging]
+    uses: Triorex/paved-road-platform/.github/workflows/release.yml@PLATFORM_SHA_PENDING # v1.0.0
+    with:
+      image: ${{ needs.build.outputs.image }}
+      digest: ${{ needs.build.outputs.digest }}
+      environment: production
+    permissions:
+      contents: read
+      packages: write
+      attestations: read

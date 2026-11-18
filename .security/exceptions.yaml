@@ -1,0 +1,12 @@
+# Risk exceptions for this repository. Changes are reviewed by @Triorex/appsec (CODEOWNERS).
+# Every exception is time-boxed (max 90 days); CI fails when one expires.
+# Types: cve (CVE id) | package (name==version, for the curation gate) | rule (scanner rule id)
+exceptions: []
+#  - id: EXC-2026-001
+#    type: cve
+#    target: CVE-2026-12345
+#    reason: No fixed version upstream; vulnerable function is not reachable from our code
+#    compensating_controls: WAF rule blocks the exploit path; network policy limits egress
+#    owner: "@Triorex/payments-team"
+#    approved_by: "@Triorex/appsec"
+#    expires: 2027-01-31

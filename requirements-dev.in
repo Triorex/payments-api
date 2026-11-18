@@ -1,0 +1,4 @@
+# Test-only dependencies, constrained to the runtime lock.
+-c requirements.txt
+pytest
+httpx2

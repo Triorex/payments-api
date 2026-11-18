@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.sarif
+*.tar
+.trivyignore.generated
+.DS_Store

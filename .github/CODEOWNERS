@@ -1,0 +1,8 @@
+# Default owner for everything in this repo.
+*                         @Triorex/payments-team
+# Security-sensitive paths need AppSec review: the pipeline, exceptions, deploy manifests, base image.
+/.github/workflows/       @Triorex/appsec @Triorex/platform
+/.security/               @Triorex/appsec
+/deploy/                  @Triorex/payments-team @Triorex/platform
+/Dockerfile               @Triorex/payments-team @Triorex/platform
+/.github/CODEOWNERS       @Triorex/appsec

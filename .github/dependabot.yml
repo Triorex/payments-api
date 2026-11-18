@@ -1,0 +1,33 @@
+# Dependabot: security updates come from the org security configuration; this file adds grouped
+# version updates with a release cooldown (new releases wait before they are proposed, the same
+# rule the curation gate enforces), and keeps pinned action and platform SHAs current.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    open-pull-requests-limit: 5
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      paved-road-platform:
+        patterns: ["Triorex/paved-road-platform*"]
+      actions:
+        patterns: ["*"]
+        exclude-patterns: ["Triorex/paved-road-platform*"]
