@@ -11,7 +11,7 @@ permissions: {}
 jobs:
   triage:
     name: triage
-    uses: Triorex/paved-road-platform/.github/workflows/vuln-triage.yml@2e595938f560f36dce6755c55329b05a3c8b53d2 # v1.0.2
+    uses: Triorex/paved-road-platform/.github/workflows/vuln-triage.yml@13a5622411c31a3cf8f162c176c9016a37bded48 # v1.1.0-rc.1
     permissions:
       contents: read
       security-events: read

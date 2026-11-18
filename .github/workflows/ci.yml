@@ -7,6 +7,7 @@ on:
   pull_request:
   push:
     branches: [main]
+    paths-ignore: ['**.md', 'docs/**'] # docs-only changes ship nothing
 
 permissions: {}
 
@@ -17,7 +18,7 @@ concurrency:
 jobs:
   pr-security:
     name: pr-security
-    uses: Triorex/paved-road-platform/.github/workflows/pr-security.yml@2e595938f560f36dce6755c55329b05a3c8b53d2 # v1.0.2
+    uses: Triorex/paved-road-platform/.github/workflows/pr-security.yml@13a5622411c31a3cf8f162c176c9016a37bded48 # v1.1.0-rc.1
     with:
       codeql-languages: '["python","actions"]'
     permissions:
@@ -27,17 +28,16 @@ jobs:
       pull-requests: write
       actions: read
 
+  # Builds right away; pr-security re-runs on main in parallel and gates the staging promotion.
   build:
     name: secure-build
     if: github.event_name == 'push'
-    needs: pr-security
-    uses: Triorex/paved-road-platform/.github/workflows/secure-build.yml@2e595938f560f36dce6755c55329b05a3c8b53d2 # v1.0.2
+    uses: Triorex/paved-road-platform/.github/workflows/secure-build.yml@13a5622411c31a3cf8f162c176c9016a37bded48 # v1.1.0-rc.1
     with:
       image-name: payments-api
       language: python
       install-command: pip install -r requirements.txt -r requirements-dev.txt
       test-command: python -m pytest -q
-      dast-mode: api
     permissions:
       contents: read
       id-token: write
@@ -45,40 +45,58 @@ jobs:
       security-events: write
       attestations: write
 
-  admission:
-    name: admission-test
-    needs: build
-    uses: Triorex/paved-road-platform/.github/workflows/admission-test.yml@2e595938f560f36dce6755c55329b05a3c8b53d2 # v1.0.2
-    with:
-      image: ${{ needs.build.outputs.image }}
-      digest: ${{ needs.build.outputs.digest }}
-    permissions:
-      contents: read
-      packages: write
-      id-token: write
-
   staging:
     name: release-staging
-    needs: [build, admission]
-    uses: Triorex/paved-road-platform/.github/workflows/release.yml@2e595938f560f36dce6755c55329b05a3c8b53d2 # v1.0.2
+    needs: [pr-security, build]
+    uses: Triorex/paved-road-platform/.github/workflows/release.yml@13a5622411c31a3cf8f162c176c9016a37bded48 # v1.1.0-rc.1
     with:
       image: ${{ needs.build.outputs.image }}
       digest: ${{ needs.build.outputs.digest }}
       environment: staging
     permissions:
       contents: read
+      deployments: read # refuse to move staging backwards
       packages: write
-      attestations: read
+      id-token: write # sign the promotion attestation
+      attestations: write
+
+  # Admission + DAST against the workload deployed at the staging digest; production needs its attestation.
+  staging-verify:
+    name: staging-verify
+    needs: [build, staging]
+    uses: Triorex/paved-road-platform/.github/workflows/staging-verify.yml@13a5622411c31a3cf8f162c176c9016a37bded48 # v1.1.0-rc.1
+    with:
+      image: ${{ needs.build.outputs.image }}
+      digest: ${{ needs.build.outputs.digest }}
+      dast-mode: api
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
 
   production:
     name: release-production
-    needs: [build, staging]
-    uses: Triorex/paved-road-platform/.github/workflows/release.yml@2e595938f560f36dce6755c55329b05a3c8b53d2 # v1.0.2
+    needs: [build, staging-verify]
+    uses: Triorex/paved-road-platform/.github/workflows/release.yml@13a5622411c31a3cf8f162c176c9016a37bded48 # v1.1.0-rc.1
     with:
       image: ${{ needs.build.outputs.image }}
       digest: ${{ needs.build.outputs.digest }}
       environment: production
     permissions:
       contents: read
+      deployments: read
       packages: write
-      attestations: read
+      id-token: write
+      attestations: write
+
+  record-release:
+    name: record-release
+    needs: [build, production]
+    uses: Triorex/paved-road-platform/.github/workflows/record-release.yml@13a5622411c31a3cf8f162c176c9016a37bded48 # v1.1.0-rc.1
+    with:
+      image: ${{ needs.build.outputs.image }}
+      digest: ${{ needs.build.outputs.digest }}
+    permissions:
+      contents: write # create the release and its tag
+      actions: read # read who approved the production deployment
