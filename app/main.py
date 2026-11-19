@@ -81,7 +81,7 @@ class Store:
 
 
 store = Store()
-app = FastAPI(title="payments-api", version="1.0.0", docs_url=None, redoc_url=None)
+app = FastAPI(title="payments-api", version="1.1.0", docs_url=None, redoc_url=None)
 
 
 @app.middleware("http")
