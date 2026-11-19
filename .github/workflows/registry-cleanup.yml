@@ -11,7 +11,7 @@ permissions: {}
 jobs:
   cleanup:
     name: cleanup
-    uses: Triorex/paved-road-platform/.github/workflows/registry-cleanup.yml@d492f285f58e1c600181e20dca5a59f3c82f58d4 # v1.2.0-rc.1
+    uses: Triorex/paved-road-platform/.github/workflows/registry-cleanup.yml@165f205413662a52a97d57768de81d0afd120607 # v1.2.0-rc.2
     with:
       apply: false # flip to true after reviewing the first report
     permissions:
