@@ -1,6 +1,9 @@
 # Paved Road caller: the only CI file an app team owns.
 # Every security control lives in Triorex/paved-road-platform at the pinned commit below.
 # Dependabot (github-actions ecosystem) opens a PR when the platform ships a new release.
+#
+#   merge to main:  build -> dev -> staging -> staging-verify -> QA sign-off -> production -> release
+#   Run workflow on a branch:  build -> dev  (developer testing; branch builds never leave dev)
 name: ci
 
 on:
@@ -8,6 +11,7 @@ on:
   push:
     branches: [main]
     paths-ignore: ['**.md', 'docs/**'] # docs-only changes ship nothing
+  workflow_dispatch: # deploy any branch to dev for developer testing
 
 permissions: {}
 
@@ -18,7 +22,7 @@ concurrency:
 jobs:
   pr-security:
     name: pr-security
-    uses: Triorex/paved-road-platform/.github/workflows/pr-security.yml@13a5622411c31a3cf8f162c176c9016a37bded48 # v1.1.0
+    uses: Triorex/paved-road-platform/.github/workflows/pr-security.yml@d492f285f58e1c600181e20dca5a59f3c82f58d4 # v1.2.0-rc.1
     with:
       codeql-languages: '["python","actions"]'
     permissions:
@@ -28,11 +32,11 @@ jobs:
       pull-requests: write
       actions: read
 
-  # Builds right away; pr-security re-runs on main in parallel and gates the staging promotion.
+  # Builds right away; pr-security runs in parallel and gates the staging promotion.
   build:
     name: secure-build
-    if: github.event_name == 'push'
-    uses: Triorex/paved-road-platform/.github/workflows/secure-build.yml@13a5622411c31a3cf8f162c176c9016a37bded48 # v1.1.0
+    if: github.event_name != 'pull_request'
+    uses: Triorex/paved-road-platform/.github/workflows/secure-build.yml@d492f285f58e1c600181e20dca5a59f3c82f58d4 # v1.2.0-rc.1
     with:
       image-name: payments-api
       language: python
@@ -45,10 +49,28 @@ jobs:
       security-events: write
       attestations: write
 
+  # Dev: every main build, or any branch on demand. Developers test here; no approval.
+  dev:
+    name: release-dev
+    needs: [build]
+    uses: Triorex/paved-road-platform/.github/workflows/release.yml@d492f285f58e1c600181e20dca5a59f3c82f58d4 # v1.2.0-rc.1
+    with:
+      image: ${{ needs.build.outputs.image }}
+      digest: ${{ needs.build.outputs.digest }}
+      environment: dev
+    permissions:
+      contents: read
+      deployments: read
+      packages: write
+      id-token: write # sign the promotion attestation
+      attestations: write
+
+  # Staging: main only, after dev and the PR gates. QA and security validation happen here.
   staging:
     name: release-staging
-    needs: [pr-security, build]
-    uses: Triorex/paved-road-platform/.github/workflows/release.yml@13a5622411c31a3cf8f162c176c9016a37bded48 # v1.1.0
+    if: github.ref == 'refs/heads/main'
+    needs: [pr-security, build, dev]
+    uses: Triorex/paved-road-platform/.github/workflows/release.yml@d492f285f58e1c600181e20dca5a59f3c82f58d4 # v1.2.0-rc.1
     with:
       image: ${{ needs.build.outputs.image }}
       digest: ${{ needs.build.outputs.digest }}
@@ -64,7 +86,7 @@ jobs:
   staging-verify:
     name: staging-verify
     needs: [build, staging]
-    uses: Triorex/paved-road-platform/.github/workflows/staging-verify.yml@13a5622411c31a3cf8f162c176c9016a37bded48 # v1.1.0
+    uses: Triorex/paved-road-platform/.github/workflows/staging-verify.yml@d492f285f58e1c600181e20dca5a59f3c82f58d4 # v1.2.0-rc.1
     with:
       image: ${{ needs.build.outputs.image }}
       digest: ${{ needs.build.outputs.digest }}
@@ -75,10 +97,25 @@ jobs:
       id-token: write
       attestations: write
 
+  # QA tests in staging, then approves (qa team) -> signed QA sign-off; applies the API pentest gate.
+  qa-signoff:
+    name: qa-signoff
+    needs: [build, staging-verify]
+    uses: Triorex/paved-road-platform/.github/workflows/qa-signoff.yml@d492f285f58e1c600181e20dca5a59f3c82f58d4 # v1.2.0-rc.1
+    with:
+      image: ${{ needs.build.outputs.image }}
+      digest: ${{ needs.build.outputs.digest }}
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+      actions: read # read who approved
+
   production:
     name: release-production
-    needs: [build, staging-verify]
-    uses: Triorex/paved-road-platform/.github/workflows/release.yml@13a5622411c31a3cf8f162c176c9016a37bded48 # v1.1.0
+    needs: [build, qa-signoff]
+    uses: Triorex/paved-road-platform/.github/workflows/release.yml@d492f285f58e1c600181e20dca5a59f3c82f58d4 # v1.2.0-rc.1
     with:
       image: ${{ needs.build.outputs.image }}
       digest: ${{ needs.build.outputs.digest }}
@@ -93,7 +130,7 @@ jobs:
   record-release:
     name: record-release
     needs: [build, production]
-    uses: Triorex/paved-road-platform/.github/workflows/record-release.yml@13a5622411c31a3cf8f162c176c9016a37bded48 # v1.1.0
+    uses: Triorex/paved-road-platform/.github/workflows/record-release.yml@d492f285f58e1c600181e20dca5a59f3c82f58d4 # v1.2.0-rc.1
     with:
       image: ${{ needs.build.outputs.image }}
       digest: ${{ needs.build.outputs.digest }}
