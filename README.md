@@ -47,3 +47,5 @@ docker build -t payments-api . && docker run --rm --read-only --tmpfs /tmp -p 80
 ```
 
 Risk exceptions go in [`.security/exceptions.yaml`](.security/exceptions.yaml) (AppSec review, 90-day maximum).
+
+<!-- dev deploy demo: this branch is deployed to dev with Run workflow (never beyond dev) -->
